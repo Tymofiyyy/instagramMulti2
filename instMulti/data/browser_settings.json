@@ -1,0 +1,8 @@
+{
+  "browser_type": "chrome",
+  "headless": false,
+  "proxy_enabled": true,
+  "stealth_mode": true,
+  "dolphin_api_url": "http://localhost:3001/v1.0",
+  "dolphin_token": ""
+}

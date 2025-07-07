@@ -1,0 +1,341 @@
+{
+  "version": "3.0.0",
+  "created_at": "2025-07-07T00:05:13.496882",
+  "browser_settings": {
+    "type": "chrome",
+    "headless": false,
+    "user_data_dir": null,
+    "window_size": [
+      375,
+      812
+    ],
+    "mobile_emulation": true,
+    "stealth_mode": true,
+    "auto_close": true,
+    "timeout": 30000,
+    "navigation_timeout": 30000,
+    "dolphin_api_url": "http://localhost:3001/v1.0",
+    "dolphin_token": ""
+  },
+  "captcha_api_key": "",
+  "captcha_service": "2captcha",
+  "proxy_list": [],
+  "proxy_rotation": true,
+  "proxy_timeout": 10,
+  "proxy_per_account": true,
+  "max_accounts": 10,
+  "max_parallel_workers": 3,
+  "daily_action_limit": 80,
+  "hourly_action_limit": 15,
+  "max_errors_per_account": 3,
+  "cooldown_after_error": 1800,
+  "session_timeout": 3600,
+  "action_delays": {
+    "like": [
+      2,
+      5
+    ],
+    "comment": [
+      3,
+      8
+    ],
+    "follow": [
+      4,
+      10
+    ],
+    "unfollow": [
+      3,
+      7
+    ],
+    "story_view": [
+      1,
+      3
+    ],
+    "story_reply": [
+      2,
+      6
+    ],
+    "direct_message": [
+      5,
+      12
+    ],
+    "page_load": [
+      3,
+      7
+    ],
+    "between_actions": [
+      8,
+      15
+    ],
+    "between_targets": [
+      15,
+      45
+    ],
+    "between_accounts": [
+      120,
+      300
+    ],
+    "anti_detection": [
+      1,
+      3
+    ]
+  },
+  "user_agents": [
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (Linux; Android 12; Pixel 6 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Mobile Safari/537.36"
+  ],
+  "screen_resolutions": [
+    [
+      375,
+      812
+    ],
+    [
+      414,
+      896
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      360,
+      640
+    ],
+    [
+      375,
+      667
+    ],
+    [
+      412,
+      869
+    ],
+    [
+      414,
+      736
+    ],
+    [
+      393,
+      851
+    ]
+  ],
+  "story_replies": [
+    "🔥🔥🔥",
+    "❤️",
+    "Круто!",
+    "👍",
+    "Супер!",
+    "💯",
+    "🙌",
+    "Класно!",
+    "👏",
+    "Wow!",
+    "Дуже цікаво!",
+    "Топ контент!",
+    "Красиво!",
+    "😍",
+    "🤩",
+    "💪",
+    "✨",
+    "🎉",
+    "👌",
+    "🔥",
+    "Неймовірно!",
+    "Вау!",
+    "Шикарно!",
+    "Бомба!",
+    "👑",
+    "Обожнюю!",
+    "Чудово!",
+    "Натхнення!",
+    "🚀",
+    "💫",
+    "Топчик!",
+    "Клас!",
+    "Файно!",
+    "Зачет!",
+    "Лайк!"
+  ],
+  "direct_messages": [
+    "Привіт! Як справи? 😊",
+    "Вітаю! Сподобався ваш контент 👍",
+    "Доброго дня! Цікавий профіль ✨",
+    "Привіт! Круті пости у вас ❤️",
+    "Вітаю! Дякую за натхнення 🙌",
+    "Привіт! Чудовий контент 🔥",
+    "Вітаю! Дуже цікаво 💯",
+    "Доброго дня! Класний профіль 👌",
+    "Привіт! Дуже круто виглядає 😍",
+    "Вітаю! Продовжуйте в тому ж дусі 🚀",
+    "Класний контент! 👏",
+    "Дуже натхненно! ✨"
+  ],
+  "automation_settings": {
+    "run_schedule": "09:00-22:00",
+    "days_of_week": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "break_duration": [
+      30,
+      120
+    ],
+    "max_actions_per_session": 50,
+    "session_duration": [
+      60,
+      180
+    ],
+    "rotate_accounts": true,
+    "use_proxy_rotation": true,
+    "randomize_order": true,
+    "respect_rate_limits": true,
+    "auto_retry_failed": true,
+    "retry_count": 2,
+    "retry_delay": [
+      300,
+      600
+    ],
+    "parallel_mode": true,
+    "worker_sync_interval": 10,
+    "session_isolation": true
+  },
+  "safety_settings": {
+    "check_shadowban": true,
+    "avoid_suspicious_behavior": true,
+    "randomize_actions": true,
+    "human_like_delays": true,
+    "monitor_account_health": true,
+    "auto_pause_on_errors": true,
+    "max_daily_follows": 50,
+    "max_daily_unfollows": 50,
+    "max_daily_likes": 300,
+    "max_daily_comments": 50,
+    "max_daily_stories": 100,
+    "max_daily_dms": 20,
+    "fingerprint_randomization": true,
+    "viewport_randomization": true,
+    "timezone_randomization": false
+  },
+  "selectors": {
+    "login": {
+      "username_field": "input[name='username']",
+      "password_field": "input[name='password']",
+      "login_button": "button[type='submit']",
+      "save_info_not_now": "text=Not Now",
+      "turn_on_notifications": "text=Not Now"
+    },
+    "posts": {
+      "post_links": "article a[href*='/p/']",
+      "like_button": "[aria-label='Like']",
+      "liked_button": "[aria-label='Unlike']",
+      "close_button": "[aria-label='Close']"
+    },
+    "stories": {
+      "story_avatar": "canvas",
+      "story_container": "[role='dialog']",
+      "like_button": "[aria-label='Like']",
+      "reply_field": "textarea[placeholder*='message']",
+      "send_button": "button[type='submit']",
+      "next_button": "[aria-label='Next']",
+      "close_story": "[aria-label='Close']"
+    },
+    "direct": {
+      "new_message_button": "[aria-label*='New message']",
+      "search_field": "input[placeholder*='Search']",
+      "message_field": "textarea[placeholder*='Message']",
+      "send_button": "button[type='submit']"
+    },
+    "popups": {
+      "notification_not_now": "text=Not Now",
+      "save_info_not_now": "text=Not Now",
+      "install_app_cancel": "text=Cancel",
+      "close_buttons": "[aria-label='Close']"
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/instagram_bot.log",
+    "max_file_size": 10485760,
+    "backup_count": 5,
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "separate_worker_logs": true
+  },
+  "gui_settings": {
+    "theme": "dark",
+    "window_size": [
+      1400,
+      900
+    ],
+    "auto_save": true,
+    "auto_refresh": 30,
+    "show_notifications": true,
+    "language": "uk",
+    "show_worker_status": true,
+    "real_time_stats": true
+  },
+  "playwright_settings": {
+    "browser_type": "chromium",
+    "launch_options": {
+      "headless": false,
+      "slow_mo": 100,
+      "devtools": false,
+      "timeout": 30000
+    },
+    "context_options": {
+      "user_agent": null,
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "device_scale_factor": 2,
+      "is_mobile": true,
+      "has_touch": true,
+      "locale": "uk-UA",
+      "timezone_id": "Europe/Kiev",
+      "permissions": [
+        "geolocation"
+      ],
+      "geolocation": {
+        "latitude": 50.4501,
+        "longitude": 30.5234
+      }
+    },
+    "page_options": {
+      "wait_for_load_state": "networkidle",
+      "timeout": 30000
+    },
+    "stealth_options": {
+      "webgl_vendor": "Intel Inc.",
+      "webgl_renderer": "Intel Iris OpenGL Engine",
+      "navigator_languages": [
+        "uk",
+        "uk-UA",
+        "en"
+      ],
+      "navigator_platform": "MacIntel"
+    }
+  },
+  "dolphin_settings": {
+    "api_url": "http://localhost:3001/v1.0",
+    "token": "",
+    "auto_create_profiles": true,
+    "profile_settings": {
+      "name_prefix": "InstagramBot_",
+      "main_website": "instagram.com",
+      "browser_type": "anty",
+      "os": "android",
+      "start_page": "instagram.com",
+      "browser_core": "chromium"
+    },
+    "proxy_settings": {
+      "auto_assign": true,
+      "check_proxy": true,
+      "proxy_type": "http"
+    }
+  }
+}
