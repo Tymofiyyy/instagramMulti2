@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Instagram Bot Pro v3.0 - Оптимізований GUI з розподілом воркерів
+Instagram Bot Pro v3.0 - Повний GUI з реальною автоматизацією
+Професійний інтерфейс з підтримкою Playwright браузерів
 """
 
 import tkinter as tk
@@ -12,17 +13,36 @@ from typing import Dict, List, Any, Optional
 import threading
 import asyncio
 import queue
+import sys
+import traceback
 
+# Імпорт модулів для реальної автоматизації
 try:
     from config import BotConfig
-    from automation_engine import MultiWorkerManager, InstagramAutomation # Реальна автоматизація
+    from automation_engine import MultiWorkerManager, InstagramAutomation
     from data_manager_final import DataManager
     from browser_manager import BrowserFactory
+    print("🤖 Модулі реальної автоматизації завантажено успішно")
     REAL_AUTOMATION = True
 except ImportError as e:
-    print(f"Помилка імпорту реальної автоматизації: {e}")
-    print("Використовується симуляція")
+    print(f"❌ Помилка імпорту модулів: {e}")
+    print("💡 Встановіть залежності: pip install playwright && playwright install chromium")
+    # Створення заглушок для відсутніх модулів
+    BotConfig = None
+    MultiWorkerManager = None
+    InstagramAutomation = None
+    DataManager = None
+    BrowserFactory = None
     REAL_AUTOMATION = False
+    exit("❌ Неможливо запустити без необхідних модулів")
+
+# Перевірка Playwright
+try:
+    from playwright.async_api import async_playwright
+    print("✅ Playwright доступний")
+except ImportError:
+    print("❌ Playwright недоступний")
+    exit("❌ Встановіть Playwright: pip install playwright && playwright install chromium")
 
 
 class ModernStyle:
@@ -1008,11 +1028,18 @@ class CompactWorkerStatusWidget(tk.Frame):
 
 
 class InstagramBotGUI:
-    """Головний клас GUI з оптимізованими розмірами"""
+    """Головний клас GUI з реальною автоматизацією"""
     
     def __init__(self, root):
         self.root = root
-        self.data_manager = DataManager()
+        
+        # Ініціалізація менеджера даних
+        if DataManager:
+            self.data_manager = DataManager()
+        else:
+            self.data_manager = None
+            print("⚠️ DataManager недоступний - використовується fallback")
+        
         self.automation_manager = None
         self.worker_widgets = []
         self.worker_configs = []
@@ -1043,7 +1070,7 @@ class InstagramBotGUI:
         main_container.pack(fill='both', expand=True)
         
         # Компактна бічна панель
-        sidebar = tk.Frame(main_container, bg=ModernStyle.COLORS['sidebar'], width=250)  # Зменшена ширина
+        sidebar = tk.Frame(main_container, bg=ModernStyle.COLORS['sidebar'], width=250)
         sidebar.pack(side='left', fill='y')
         sidebar.pack_propagate(False)
         
@@ -1054,7 +1081,7 @@ class InstagramBotGUI:
         tk.Label(
             logo_frame,
             text="🤖 Instagram Bot Pro",
-            font=ModernStyle.FONTS['heading'],  # Зменшений шрифт
+            font=ModernStyle.FONTS['heading'],
             bg=ModernStyle.COLORS['sidebar'],
             fg=ModernStyle.COLORS['text']
         ).pack()
@@ -1065,6 +1092,20 @@ class InstagramBotGUI:
             font=ModernStyle.FONTS['small'],
             bg=ModernStyle.COLORS['sidebar'],
             fg=ModernStyle.COLORS['text_secondary']
+        ).pack()
+        
+        # Статус автоматизації
+        status_frame = tk.Frame(logo_frame, bg=ModernStyle.COLORS['sidebar'])
+        status_frame.pack(pady=(5, 0))
+        
+        tk.Label(
+            status_frame,
+            text="🤖 РЕАЛЬНА РОБОТА",
+            font=ModernStyle.FONTS['small'],
+            bg=ModernStyle.COLORS['success'],
+            fg='white',
+            padx=8,
+            pady=2
         ).pack()
         
         # Компактна навігація
@@ -1087,13 +1128,13 @@ class InstagramBotGUI:
                 nav_frame,
                 text=f"  {icon}  {text}",
                 command=lambda p=page: self.show_page(p),
-                font=ModernStyle.FONTS['small'],  # Зменшений шрифт
+                font=ModernStyle.FONTS['small'],
                 bg=ModernStyle.COLORS['sidebar'],
                 fg=ModernStyle.COLORS['text'],
                 relief='flat',
                 anchor='w',
                 padx=12,
-                pady=6,  # Зменшений відступ
+                pady=6,
                 cursor='hand2'
             )
             btn.pack(fill='x', pady=1)
@@ -1142,19 +1183,19 @@ class InstagramBotGUI:
         # Головна сторінка
         self.pages["main"] = self.create_main_page()
         
-        # Сторінка акаунтів (використаємо спрощену версію)
+        # Сторінка акаунтів
         self.pages["accounts"] = self.create_accounts_page()
         
-        # Сторінка цілей (використаємо спрощену версію)
+        # Сторінка цілей
         self.pages["targets"] = self.create_targets_page()
         
         # Сторінка ланцюжка дій
         self.pages["chain"] = ChainBuilderWidget(self.content_area)
         
-        # Сторінка текстів (використаємо спрощену версію)
+        # Сторінка текстів
         self.pages["texts"] = self.create_texts_page()
         
-        # Сторінка браузера (використаємо спрощену версію)
+        # Сторінка браузера
         self.pages["browser"] = self.create_browser_page()
         
         # Сторінка запуску
@@ -1200,7 +1241,7 @@ class InstagramBotGUI:
             tk.Label(
                 content,
                 text=icon,
-                font=('Arial', 24),  # Зменшений розмір іконки
+                font=('Arial', 24),
                 bg=ModernStyle.COLORS['card'],
                 fg=ModernStyle.COLORS['primary']
             ).pack()
@@ -1252,6 +1293,265 @@ class InstagramBotGUI:
         
         actions_content.grid_columnconfigure(0, weight=1)
         actions_content.grid_columnconfigure(1, weight=1)
+        
+        return page
+    
+    def create_accounts_page(self):
+        """Створення спрощеної сторінки акаунтів"""
+        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
+        
+        header = tk.Label(
+            page,
+            text="👥 Управління акаунтами",
+            font=ModernStyle.FONTS['heading'],
+            bg=ModernStyle.COLORS['background'],
+            fg=ModernStyle.COLORS['text']
+        )
+        header.pack(pady=10)
+        
+        # Форма додавання
+        add_card = GlassCard(page, title="Додати акаунт")
+        add_card.pack(fill='x', padx=15, pady=10)
+        
+        form_frame = tk.Frame(add_card, bg=ModernStyle.COLORS['card'])
+        form_frame.pack(fill='x', padx=15, pady=(0, 15))
+        
+        # Поля введення в сітці
+        fields_frame = tk.Frame(form_frame, bg=ModernStyle.COLORS['card'])
+        fields_frame.pack(fill='x', pady=5)
+        
+        tk.Label(fields_frame, text="Логін:", **self.label_style()).grid(row=0, column=0, sticky='w')
+        self.username_var = tk.StringVar()
+        tk.Entry(fields_frame, textvariable=self.username_var, **self.entry_style()).grid(row=0, column=1, sticky='ew', padx=5)
+        
+        tk.Label(fields_frame, text="Пароль:", **self.label_style()).grid(row=0, column=2, sticky='w', padx=(10, 0))
+        self.password_var = tk.StringVar()
+        tk.Entry(fields_frame, textvariable=self.password_var, show='*', **self.entry_style()).grid(row=0, column=3, sticky='ew', padx=5)
+        
+        tk.Label(fields_frame, text="Проксі:", **self.label_style()).grid(row=1, column=0, sticky='w')
+        self.proxy_var = tk.StringVar()
+        tk.Entry(fields_frame, textvariable=self.proxy_var, **self.entry_style()).grid(row=1, column=1, columnspan=3, sticky='ew', padx=5, pady=5)
+        
+        fields_frame.grid_columnconfigure(1, weight=1)
+        fields_frame.grid_columnconfigure(3, weight=1)
+        
+        AnimatedButton(
+            form_frame,
+            text="➕ Додати акаунт",
+            command=self.add_account,
+            bg=ModernStyle.COLORS['success']
+        ).pack(pady=10)
+        
+        # Список акаунтів
+        list_card = GlassCard(page, title="Збережені акаунти")
+        list_card.pack(fill='both', expand=True, padx=15, pady=10)
+        
+        list_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
+        list_frame.pack(fill='both', expand=True, padx=15, pady=(0, 15))
+        
+        # Treeview для акаунтів
+        columns = ('Логін', 'Проксі', 'Статус')
+        self.accounts_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=8)
+        
+        for col in columns:
+            self.accounts_tree.heading(col, text=col)
+            self.accounts_tree.column(col, width=120)
+        
+        # Стилізація Treeview
+        style = ttk.Style()
+        style.configure("Treeview", 
+                       background=ModernStyle.COLORS['background'],
+                       foreground=ModernStyle.COLORS['text'],
+                       fieldbackground=ModernStyle.COLORS['background'])
+        style.configure("Treeview.Heading", 
+                       background=ModernStyle.COLORS['card'],
+                       foreground=ModernStyle.COLORS['text'])
+        
+        scrollbar_acc = ttk.Scrollbar(list_frame, orient="vertical", command=self.accounts_tree.yview)
+        self.accounts_tree.configure(yscrollcommand=scrollbar_acc.set)
+        
+        self.accounts_tree.pack(side='left', fill='both', expand=True)
+        scrollbar_acc.pack(side='right', fill='y')
+        
+        # Кнопки управління
+        control_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
+        control_frame.pack(fill='x', padx=15, pady=(0, 15))
+        
+        AnimatedButton(control_frame, text="🗑️ Видалити", command=self.remove_account, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
+        AnimatedButton(control_frame, text="📁 Імпорт", command=self.import_accounts, bg=ModernStyle.COLORS['info']).pack(side='left', padx=5)
+        AnimatedButton(control_frame, text="🧹 Очистити все", command=self.clear_all_accounts, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
+        AnimatedButton(control_frame, text="💾 Експорт", command=self.export_accounts, bg=ModernStyle.COLORS['info']).pack(side='right', padx=5)
+        
+        # Ініціалізація даних
+        self.accounts = []
+        self.load_accounts()
+        
+        return page
+    
+    def create_targets_page(self):
+        """Створення спрощеної сторінки цілей"""
+        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
+        
+        header = tk.Label(
+            page,
+            text="🎯 Управління цілями",
+            font=ModernStyle.FONTS['heading'],
+            bg=ModernStyle.COLORS['background'],
+            fg=ModernStyle.COLORS['text']
+        )
+        header.pack(pady=10)
+        
+        # Форма додавання
+        add_card = GlassCard(page, title="Додати цілі")
+        add_card.pack(fill='x', padx=15, pady=10)
+        
+        form_frame = tk.Frame(add_card, bg=ModernStyle.COLORS['card'])
+        form_frame.pack(fill='x', padx=15, pady=(0, 15))
+        
+        # Одна ціль
+        tk.Label(form_frame, text="Username:", **self.label_style()).pack(anchor='w')
+        self.target_var = tk.StringVar()
+        target_entry = tk.Entry(form_frame, textvariable=self.target_var, **self.entry_style())
+        target_entry.pack(fill='x', pady=5)
+        target_entry.bind('<Return>', lambda e: self.add_target())
+        
+        # Масове додавання
+        tk.Label(form_frame, text="Кілька цілей (по одній на рядок):", **self.label_style()).pack(anchor='w', pady=(10, 0))
+        self.bulk_text = scrolledtext.ScrolledText(form_frame, height=4, **self.text_style())
+        self.bulk_text.pack(fill='x', pady=5)
+        
+        buttons_frame = tk.Frame(form_frame, bg=ModernStyle.COLORS['card'])
+        buttons_frame.pack(fill='x', pady=10)
+        
+        AnimatedButton(buttons_frame, text="➕ Додати", command=self.add_target, bg=ModernStyle.COLORS['success']).pack(side='left', padx=5)
+        AnimatedButton(buttons_frame, text="📝 Додати всі", command=self.add_bulk_targets, bg=ModernStyle.COLORS['primary']).pack(side='left', padx=5)
+        
+        # Список цілей
+        list_card = GlassCard(page, title="Збережені цілі")
+        list_card.pack(fill='both', expand=True, padx=15, pady=10)
+        
+        list_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
+        list_frame.pack(fill='both', expand=True, padx=15, pady=(0, 15))
+        
+        self.targets_listbox = tk.Listbox(list_frame, **self.listbox_style())
+        targets_scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.targets_listbox.yview)
+        self.targets_listbox.configure(yscrollcommand=targets_scrollbar.set)
+        
+        self.targets_listbox.pack(side='left', fill='both', expand=True)
+        targets_scrollbar.pack(side='right', fill='y')
+        
+        # Кнопки управління
+        control_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
+        control_frame.pack(fill='x', padx=15, pady=(0, 15))
+        
+        AnimatedButton(control_frame, text="🗑️ Видалити", command=self.remove_target, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
+        AnimatedButton(control_frame, text="📁 Імпорт", command=self.import_targets, bg=ModernStyle.COLORS['info']).pack(side='left', padx=5)
+        AnimatedButton(control_frame, text="🧹 Очистити все", command=self.clear_all_targets, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
+        AnimatedButton(control_frame, text="💾 Експорт", command=self.export_targets, bg=ModernStyle.COLORS['info']).pack(side='right', padx=5)
+        
+        # Ініціалізація даних
+        self.targets = []
+        self.load_targets()
+        
+        return page
+    
+    def create_texts_page(self):
+        """Створення спрощеної сторінки текстів"""
+        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
+        
+        header = tk.Label(
+            page,
+            text="📝 Управління текстами",
+            font=ModernStyle.FONTS['heading'],
+            bg=ModernStyle.COLORS['background'],
+            fg=ModernStyle.COLORS['text']
+        )
+        header.pack(pady=10)
+        
+        # Notebook для вкладок
+        notebook = ttk.Notebook(page)
+        notebook.pack(fill='both', expand=True, padx=15, pady=10)
+        
+        # Вкладка сторіс
+        stories_frame = tk.Frame(notebook, bg=ModernStyle.COLORS['card'])
+        notebook.add(stories_frame, text="Відповіді на сторіс")
+        
+        # Вкладка DM
+        dm_frame = tk.Frame(notebook, bg=ModernStyle.COLORS['card'])
+        notebook.add(dm_frame, text="Приватні повідомлення")
+        
+        # Створення вмісту вкладок
+        self.create_texts_tab(stories_frame, 'story_replies')
+        self.create_texts_tab(dm_frame, 'direct_messages')
+        
+        # Ініціалізація даних
+        self.texts = {'story_replies': [], 'direct_messages': []}
+        self.load_texts()
+        
+        return page
+    
+    def create_browser_page(self):
+        """Створення спрощеної сторінки браузера"""
+        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
+        
+        header = tk.Label(
+            page,
+            text="🌐 Налаштування браузера",
+            font=ModernStyle.FONTS['heading'],
+            bg=ModernStyle.COLORS['background'],
+            fg=ModernStyle.COLORS['text']
+        )
+        header.pack(pady=10)
+        
+        # Вибір браузера
+        browser_card = GlassCard(page, title="Тип браузера")
+        browser_card.pack(fill='x', padx=15, pady=10)
+        
+        browser_content = tk.Frame(browser_card, bg=ModernStyle.COLORS['card'])
+        browser_content.pack(fill='x', padx=15, pady=(0, 15))
+        
+        self.browser_var = tk.StringVar(value='chrome')
+        
+        chrome_frame = tk.Frame(browser_content, bg=ModernStyle.COLORS['surface'], relief='solid', bd=1)
+        chrome_frame.pack(fill='x', pady=5)
+        
+        tk.Radiobutton(
+            chrome_frame,
+            text="🌐 Google Chrome (безкоштовний)",
+            variable=self.browser_var,
+            value='chrome',
+            **self.radio_style()
+        ).pack(anchor='w', padx=10, pady=8)
+        
+        dolphin_frame = tk.Frame(browser_content, bg=ModernStyle.COLORS['surface'], relief='solid', bd=1)
+        dolphin_frame.pack(fill='x', pady=5)
+        
+        tk.Radiobutton(
+            dolphin_frame,
+            text="🐬 Dolphin Anty (професійний)",
+            variable=self.browser_var,
+            value='dolphin',
+            **self.radio_style()
+        ).pack(anchor='w', padx=10, pady=8)
+        
+        # Загальні налаштування
+        settings_card = GlassCard(page, title="Налаштування")
+        settings_card.pack(fill='x', padx=15, pady=10)
+        
+        settings_content = tk.Frame(settings_card, bg=ModernStyle.COLORS['card'])
+        settings_content.pack(fill='x', padx=15, pady=(0, 15))
+        
+        self.headless_var = tk.BooleanVar()
+        self.stealth_var = tk.BooleanVar(value=True)
+        self.proxy_enabled_var = tk.BooleanVar(value=True)
+        
+        tk.Checkbutton(settings_content, text="Headless режим", variable=self.headless_var, **self.check_style()).pack(anchor='w', pady=2)
+        tk.Checkbutton(settings_content, text="Stealth режим", variable=self.stealth_var, **self.check_style()).pack(anchor='w', pady=2)
+        tk.Checkbutton(settings_content, text="Використовувати проксі", variable=self.proxy_enabled_var, **self.check_style()).pack(anchor='w', pady=2)
+        
+        # Ініціалізація даних
+        self.browser_settings = {}
+        self.load_browser_settings()
         
         return page
     
@@ -1358,9 +1658,9 @@ class InstagramBotGUI:
         # Індикатор режиму автоматизації
         mode_indicator = tk.Label(
             mode_frame,
-            text="🎭 СИМУЛЯЦІЯ" if not REAL_AUTOMATION else "🤖 РЕАЛЬНА РОБОТА",
+            text="🤖 РЕАЛЬНА РОБОТА",
             font=ModernStyle.FONTS['small'],
-            bg=ModernStyle.COLORS['warning'] if not REAL_AUTOMATION else ModernStyle.COLORS['success'],
+            bg=ModernStyle.COLORS['success'],
             fg='white',
             padx=8,
             pady=2
@@ -1461,403 +1761,6 @@ class InstagramBotGUI:
                 bind_mousewheel(child)
         
         bind_mousewheel(page)
-        
-        return page
-    
-    def update_worker_configs(self):
-        """Оновлення конфігурації воркерів"""
-        try:
-            # Отримання даних
-            accounts = self.get_accounts_data()
-            targets = self.get_targets_data()
-            chain = self.get_chain_data()
-            workers_count = self.workers_var.get()
-            
-            print(f"Оновлення воркерів: {len(accounts)} акаунтів, {workers_count} воркерів")  # Для відлагодження
-            
-            # Очищення існуючих конфігурацій
-            for widget in self.worker_configs:
-                widget.destroy()
-            self.worker_configs.clear()
-            
-            # Очищення статусних віджетів
-            for widget in self.worker_widgets:
-                widget.destroy()
-            self.worker_widgets.clear()
-            
-            # Створення нових конфігурацій воркерів
-            for i in range(workers_count):
-                # Конфігурація воркера
-                worker_config = WorkerConfigWidget(
-                    self.workers_config_container, 
-                    i, 
-                    accounts, 
-                    targets, 
-                    chain
-                )
-                worker_config.pack(fill='x', pady=3)
-                self.worker_configs.append(worker_config)
-                
-                # Статус воркера
-                worker_status = CompactWorkerStatusWidget(self.workers_status_container, i)
-                worker_status.pack(fill='x', pady=2)
-                self.worker_widgets.append(worker_status)
-            
-            # Повідомлення якщо немає достатньо акаунтів
-            if len(accounts) < workers_count:
-                messagebox.showwarning(
-                    "Попередження",
-                    f"Кількість акаунтів ({len(accounts)}) менша за кількість воркерів ({workers_count}).\n"
-                    f"Деякі воркери будуть вимкнені."
-                )
-        
-        except Exception as e:
-            print(f"Помилка оновлення конфігурації: {e}")  # Для відлагодження
-            messagebox.showerror("Помилка", f"Помилка оновлення конфігурації: {e}")
-    
-    def get_accounts_data(self):
-        """Отримання даних акаунтів"""
-        try:
-            # Спробуємо отримати з головного об'єкта
-            if hasattr(self, 'accounts') and self.accounts:
-                print(f"Отримано {len(self.accounts)} акаунтів з головного об'єкта")
-                return self.accounts
-            
-            # Якщо немає, спробуємо з сторінки
-            if hasattr(self.pages.get("accounts"), 'accounts'):
-                accounts = self.pages["accounts"].accounts
-                print(f"Отримано {len(accounts)} акаунтів зі сторінки")
-                return accounts
-            
-            # Якщо і це не працює, завантажимо напряму
-            if os.path.exists('data/accounts.json'):
-                with open('data/accounts.json', 'r', encoding='utf-8') as f:
-                    accounts = json.load(f)
-                    print(f"Завантажено {len(accounts)} акаунтів з файлу")
-                    return accounts
-            
-            print("Акаунти не знайдено")
-            return []
-        except Exception as e:
-            print(f"Помилка отримання акаунтів: {e}")
-            return []
-    
-    def get_targets_data(self):
-        """Отримання даних цілей"""
-        try:
-            # Спробуємо отримати з головного об'єкта
-            if hasattr(self, 'targets') and self.targets:
-                print(f"Отримано {len(self.targets)} цілей з головного об'єкта")
-                return self.targets
-            
-            # Якщо немає, спробуємо з сторінки
-            if hasattr(self.pages.get("targets"), 'targets'):
-                targets = self.pages["targets"].targets
-                print(f"Отримано {len(targets)} цілей зі сторінки")
-                return targets
-            
-            # Якщо і це не працює, завантажимо напряму
-            if os.path.exists('data/targets.json'):
-                with open('data/targets.json', 'r', encoding='utf-8') as f:
-                    targets = json.load(f)
-                    print(f"Завантажено {len(targets)} цілей з файлу")
-                    return targets
-            
-            print("Цілі не знайдено")
-            return []
-        except Exception as e:
-            print(f"Помилка отримання цілей: {e}")
-            return []
-    
-    def get_chain_data(self):
-        """Отримання даних ланцюжка"""
-        try:
-            # Спробуємо отримати з сторінки ланцюжка
-            if hasattr(self.pages.get("chain"), 'get_chain'):
-                chain = self.pages["chain"].get_chain()
-                print(f"Отримано ланцюжок з {len(chain)} дій зі сторінки")
-                if chain:
-                    for i, action in enumerate(chain):
-                        print(f"  Дія {i+1}: {action.get('name', action.get('type'))}")
-                return chain
-            
-            # Якщо не знайшли, спробуємо напряму з об'єкта
-            if hasattr(self.pages.get("chain"), 'chain'):
-                chain = self.pages["chain"].chain
-                enabled_chain = [action for action in chain if action.get('enabled', True)]
-                print(f"Отримано ланцюжок з {len(enabled_chain)} увімкнених дій з об'єкта")
-                return enabled_chain
-            
-            # Спробуємо завантажити з файлу
-            if os.path.exists('data/action_chain.json'):
-                with open('data/action_chain.json', 'r', encoding='utf-8') as f:
-                    chain = json.load(f)
-                    enabled_chain = [action for action in chain if action.get('enabled', True)]
-                    print(f"Завантажено ланцюжок з {len(enabled_chain)} дій з файлу")
-                    return enabled_chain
-            
-            print("❌ Ланцюжок дій не знайдено")
-            return []
-        except Exception as e:
-            print(f"❌ Помилка отримання ланцюжка: {e}")
-            return []
-    
-    def create_accounts_page(self):
-        """Створення спрощеної сторінки акаунтів"""
-        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
-        
-        header = tk.Label(
-            page,
-            text="👥 Управління акаунтами",
-            font=ModernStyle.FONTS['heading'],
-            bg=ModernStyle.COLORS['background'],
-            fg=ModernStyle.COLORS['text']
-        )
-        header.pack(pady=10)
-        
-        # Форма додавання
-        add_card = GlassCard(page, title="Додати акаунт")
-        add_card.pack(fill='x', padx=15, pady=10)
-        
-        form_frame = tk.Frame(add_card, bg=ModernStyle.COLORS['card'])
-        form_frame.pack(fill='x', padx=15, pady=(0, 15))
-        
-        # Поля введення в сітці
-        fields_frame = tk.Frame(form_frame, bg=ModernStyle.COLORS['card'])
-        fields_frame.pack(fill='x', pady=5)
-        
-        tk.Label(fields_frame, text="Логін:", **self.label_style()).grid(row=0, column=0, sticky='w')
-        self.username_var = tk.StringVar()
-        tk.Entry(fields_frame, textvariable=self.username_var, **self.entry_style()).grid(row=0, column=1, sticky='ew', padx=5)
-        
-        tk.Label(fields_frame, text="Пароль:", **self.label_style()).grid(row=0, column=2, sticky='w', padx=(10, 0))
-        self.password_var = tk.StringVar()
-        tk.Entry(fields_frame, textvariable=self.password_var, show='*', **self.entry_style()).grid(row=0, column=3, sticky='ew', padx=5)
-        
-        tk.Label(fields_frame, text="Проксі:", **self.label_style()).grid(row=1, column=0, sticky='w')
-        self.proxy_var = tk.StringVar()
-        tk.Entry(fields_frame, textvariable=self.proxy_var, **self.entry_style()).grid(row=1, column=1, columnspan=3, sticky='ew', padx=5, pady=5)
-        
-        fields_frame.grid_columnconfigure(1, weight=1)
-        fields_frame.grid_columnconfigure(3, weight=1)
-        
-        AnimatedButton(
-            form_frame,
-            text="➕ Додати акаунт",
-            command=self.add_account,
-            bg=ModernStyle.COLORS['success']
-        ).pack(pady=10)
-        
-        # Список акаунтів
-        list_card = GlassCard(page, title="Збережені акаунти")
-        list_card.pack(fill='both', expand=True, padx=15, pady=10)
-        
-        list_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
-        list_frame.pack(fill='both', expand=True, padx=15, pady=(0, 15))
-        
-        # Treeview для акаунтів
-        columns = ('Логін', 'Проксі', 'Статус')
-        self.accounts_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=8)
-        
-        for col in columns:
-            self.accounts_tree.heading(col, text=col)
-            self.accounts_tree.column(col, width=120)
-        
-        # Стилізація Treeview
-        style = ttk.Style()
-        style.configure("Treeview", 
-                       background=ModernStyle.COLORS['background'],
-                       foreground=ModernStyle.COLORS['text'],
-                       fieldbackground=ModernStyle.COLORS['background'])
-        style.configure("Treeview.Heading", 
-                       background=ModernStyle.COLORS['card'],
-                       foreground=ModernStyle.COLORS['text'])
-        
-        scrollbar_acc = ttk.Scrollbar(list_frame, orient="vertical", command=self.accounts_tree.yview)
-        self.accounts_tree.configure(yscrollcommand=scrollbar_acc.set)
-        
-        self.accounts_tree.pack(side='left', fill='both', expand=True)
-        scrollbar_acc.pack(side='right', fill='y')
-        
-        # Кнопки управління
-        control_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
-        control_frame.pack(fill='x', padx=15, pady=(0, 15))
-        
-        AnimatedButton(control_frame, text="🗑️ Видалити", command=self.remove_account, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
-        AnimatedButton(control_frame, text="📁 Імпорт", command=self.import_accounts, bg=ModernStyle.COLORS['info']).pack(side='left', padx=5)
-        AnimatedButton(control_frame, text="🧹 Очистити все", command=self.clear_all_accounts, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
-        AnimatedButton(control_frame, text="💾 Експорт", command=self.export_accounts, bg=ModernStyle.COLORS['info']).pack(side='right', padx=5)
-        
-        # Ініціалізація даних
-        self.accounts = []
-        self.load_accounts()  # Завантаження відразу після створення віджетів
-        
-        return page
-    
-    def create_targets_page(self):
-        """Створення спрощеної сторінки цілей"""
-        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
-        
-        header = tk.Label(
-            page,
-            text="🎯 Управління цілями",
-            font=ModernStyle.FONTS['heading'],
-            bg=ModernStyle.COLORS['background'],
-            fg=ModernStyle.COLORS['text']
-        )
-        header.pack(pady=10)
-        
-        # Форма додавання
-        add_card = GlassCard(page, title="Додати цілі")
-        add_card.pack(fill='x', padx=15, pady=10)
-        
-        form_frame = tk.Frame(add_card, bg=ModernStyle.COLORS['card'])
-        form_frame.pack(fill='x', padx=15, pady=(0, 15))
-        
-        # Одна ціль
-        tk.Label(form_frame, text="Username:", **self.label_style()).pack(anchor='w')
-        self.target_var = tk.StringVar()
-        target_entry = tk.Entry(form_frame, textvariable=self.target_var, **self.entry_style())
-        target_entry.pack(fill='x', pady=5)
-        target_entry.bind('<Return>', lambda e: self.add_target())
-        
-        # Масове додавання
-        tk.Label(form_frame, text="Кілька цілей (по одній на рядок):", **self.label_style()).pack(anchor='w', pady=(10, 0))
-        self.bulk_text = scrolledtext.ScrolledText(form_frame, height=4, **self.text_style())
-        self.bulk_text.pack(fill='x', pady=5)
-        
-        buttons_frame = tk.Frame(form_frame, bg=ModernStyle.COLORS['card'])
-        buttons_frame.pack(fill='x', pady=10)
-        
-        AnimatedButton(buttons_frame, text="➕ Додати", command=self.add_target, bg=ModernStyle.COLORS['success']).pack(side='left', padx=5)
-        AnimatedButton(buttons_frame, text="📝 Додати всі", command=self.add_bulk_targets, bg=ModernStyle.COLORS['primary']).pack(side='left', padx=5)
-        
-        # Список цілей
-        list_card = GlassCard(page, title="Збережені цілі")
-        list_card.pack(fill='both', expand=True, padx=15, pady=10)
-        
-        list_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
-        list_frame.pack(fill='both', expand=True, padx=15, pady=(0, 15))
-        
-        self.targets_listbox = tk.Listbox(list_frame, **self.listbox_style())
-        targets_scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.targets_listbox.yview)
-        self.targets_listbox.configure(yscrollcommand=targets_scrollbar.set)
-        
-        self.targets_listbox.pack(side='left', fill='both', expand=True)
-        targets_scrollbar.pack(side='right', fill='y')
-        
-        # Кнопки управління
-        control_frame = tk.Frame(list_card, bg=ModernStyle.COLORS['card'])
-        control_frame.pack(fill='x', padx=15, pady=(0, 15))
-        
-        AnimatedButton(control_frame, text="🗑️ Видалити", command=self.remove_target, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
-        AnimatedButton(control_frame, text="📁 Імпорт", command=self.import_targets, bg=ModernStyle.COLORS['info']).pack(side='left', padx=5)
-        AnimatedButton(control_frame, text="🧹 Очистити все", command=self.clear_all_targets, bg=ModernStyle.COLORS['error']).pack(side='left', padx=5)
-        AnimatedButton(control_frame, text="💾 Експорт", command=self.export_targets, bg=ModernStyle.COLORS['info']).pack(side='right', padx=5)
-        
-        # Ініціалізація даних
-        self.targets = []
-        self.load_targets()  # Завантаження відразу після створення віджетів
-        
-        return page
-    
-    def create_texts_page(self):
-        """Створення спрощеної сторінки текстів"""
-        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
-        
-        header = tk.Label(
-            page,
-            text="📝 Управління текстами",
-            font=ModernStyle.FONTS['heading'],
-            bg=ModernStyle.COLORS['background'],
-            fg=ModernStyle.COLORS['text']
-        )
-        header.pack(pady=10)
-        
-        # Notebook для вкладок
-        notebook = ttk.Notebook(page)
-        notebook.pack(fill='both', expand=True, padx=15, pady=10)
-        
-        # Вкладка сторіс
-        stories_frame = tk.Frame(notebook, bg=ModernStyle.COLORS['card'])
-        notebook.add(stories_frame, text="Відповіді на сторіс")
-        
-        # Вкладка DM
-        dm_frame = tk.Frame(notebook, bg=ModernStyle.COLORS['card'])
-        notebook.add(dm_frame, text="Приватні повідомлення")
-        
-        # Створення вмісту вкладок
-        self.create_texts_tab(stories_frame, 'story_replies')
-        self.create_texts_tab(dm_frame, 'direct_messages')
-        
-        # Ініціалізація даних
-        self.texts = {'story_replies': [], 'direct_messages': []}
-        self.load_texts()
-        
-        return page
-    
-    def create_browser_page(self):
-        """Створення спрощеної сторінки браузера"""
-        page = tk.Frame(self.content_area, bg=ModernStyle.COLORS['background'])
-        
-        header = tk.Label(
-            page,
-            text="🌐 Налаштування браузера",
-            font=ModernStyle.FONTS['heading'],
-            bg=ModernStyle.COLORS['background'],
-            fg=ModernStyle.COLORS['text']
-        )
-        header.pack(pady=10)
-        
-        # Вибір браузера
-        browser_card = GlassCard(page, title="Тип браузера")
-        browser_card.pack(fill='x', padx=15, pady=10)
-        
-        browser_content = tk.Frame(browser_card, bg=ModernStyle.COLORS['card'])
-        browser_content.pack(fill='x', padx=15, pady=(0, 15))
-        
-        self.browser_var = tk.StringVar(value='chrome')
-        
-        chrome_frame = tk.Frame(browser_content, bg=ModernStyle.COLORS['surface'], relief='solid', bd=1)
-        chrome_frame.pack(fill='x', pady=5)
-        
-        tk.Radiobutton(
-            chrome_frame,
-            text="🌐 Google Chrome (безкоштовний)",
-            variable=self.browser_var,
-            value='chrome',
-            **self.radio_style()
-        ).pack(anchor='w', padx=10, pady=8)
-        
-        dolphin_frame = tk.Frame(browser_content, bg=ModernStyle.COLORS['surface'], relief='solid', bd=1)
-        dolphin_frame.pack(fill='x', pady=5)
-        
-        tk.Radiobutton(
-            dolphin_frame,
-            text="🐬 Dolphin Anty (професійний)",
-            variable=self.browser_var,
-            value='dolphin',
-            **self.radio_style()
-        ).pack(anchor='w', padx=10, pady=8)
-        
-        # Загальні налаштування
-        settings_card = GlassCard(page, title="Налаштування")
-        settings_card.pack(fill='x', padx=15, pady=10)
-        
-        settings_content = tk.Frame(settings_card, bg=ModernStyle.COLORS['card'])
-        settings_content.pack(fill='x', padx=15, pady=(0, 15))
-        
-        self.headless_var = tk.BooleanVar()
-        self.stealth_var = tk.BooleanVar(value=True)
-        self.proxy_enabled_var = tk.BooleanVar(value=True)
-        
-        tk.Checkbutton(settings_content, text="Headless режим", variable=self.headless_var, **self.check_style()).pack(anchor='w', pady=2)
-        tk.Checkbutton(settings_content, text="Stealth режим", variable=self.stealth_var, **self.check_style()).pack(anchor='w', pady=2)
-        tk.Checkbutton(settings_content, text="Використовувати проксі", variable=self.proxy_enabled_var, **self.check_style()).pack(anchor='w', pady=2)
-        
-        # Ініціалізація даних
-        self.browser_settings = {}
-        self.load_browser_settings()
         
         return page
     
@@ -1994,7 +1897,7 @@ class InstagramBotGUI:
         self.password_var.set("")
         self.proxy_var.set("")
         
-        print(f"Додано акаунт: {username}")  # Для відлагодження
+        print(f"Додано акаунт: {username}")
         messagebox.showinfo("Успіх", "Акаунт додано")
     
     def clear_all_accounts(self):
@@ -2109,7 +2012,7 @@ class InstagramBotGUI:
         self.texts[text_type].append(text)
         self.update_texts_display(text_type)
         self.save_texts()
-        text_entry.delete('1.0', tk.END)
+        text_entry.delete_entry.delete('1.0', tk.END)
     
     def remove_text(self, text_type, listbox):
         selection = listbox.curselection()
@@ -2128,7 +2031,7 @@ class InstagramBotGUI:
         for item in self.accounts_tree.get_children():
             self.accounts_tree.delete(item)
         
-        print(f"Оновлення відображення для {len(self.accounts)} акаунтів")  # Для відлагодження
+        print(f"Оновлення відображення для {len(self.accounts)} акаунтів")
         
         # Додавання акаунтів
         for account in self.accounts:
@@ -2170,10 +2073,10 @@ class InstagramBotGUI:
             if os.path.exists('data/accounts.json'):
                 with open('data/accounts.json', 'r', encoding='utf-8') as f:
                     self.accounts = json.load(f)
-                print(f"Завантажено {len(self.accounts)} акаунтів")  # Для відлагодження
+                print(f"Завантажено {len(self.accounts)} акаунтів")
                 self.update_accounts_display()
             else:
-                print("Файл accounts.json не знайдено")  # Для відлагодження
+                print("Файл accounts.json не знайдено")
                 self.accounts = []
         except Exception as e:
             print(f"Помилка завантаження акаунтів: {e}")
@@ -2388,87 +2291,218 @@ class InstagramBotGUI:
         except Exception as e:
             messagebox.showerror("Помилка", f"Не вдалося експортувати: {e}")
     
+    # Методи для роботи з воркерами
+    def update_worker_configs(self):
+        """Оновлення конфігурації воркерів"""
+        try:
+            # Отримання даних
+            accounts = self.get_accounts_data()
+            targets = self.get_targets_data()
+            chain = self.get_chain_data()
+            workers_count = self.workers_var.get()
+            
+            print(f"Оновлення воркерів: {len(accounts)} акаунтів, {workers_count} воркерів")
+            
+            # Очищення існуючих конфігурацій
+            for widget in self.worker_configs:
+                widget.destroy()
+            self.worker_configs.clear()
+            
+            # Очищення статусних віджетів
+            for widget in self.worker_widgets:
+                widget.destroy()
+            self.worker_widgets.clear()
+            
+            # Створення нових конфігурацій воркерів
+            for i in range(workers_count):
+                # Конфігурація воркера
+                worker_config = WorkerConfigWidget(
+                    self.workers_config_container, 
+                    i, 
+                    accounts, 
+                    targets, 
+                    chain
+                )
+                worker_config.pack(fill='x', pady=3)
+                self.worker_configs.append(worker_config)
+                
+                # Статус воркера
+                worker_status = CompactWorkerStatusWidget(self.workers_status_container, i)
+                worker_status.pack(fill='x', pady=2)
+                self.worker_widgets.append(worker_status)
+            
+            # Повідомлення якщо немає достатньо акаунтів
+            if len(accounts) < workers_count:
+                messagebox.showwarning(
+                    "Попередження",
+                    f"Кількість акаунтів ({len(accounts)}) менша за кількість воркерів ({workers_count}).\n"
+                    f"Деякі воркери будуть вимкнені."
+                )
+        
+        except Exception as e:
+            print(f"Помилка оновлення конфігурації: {e}")
+            messagebox.showerror("Помилка", f"Помилка оновлення конфігурації: {e}")
+    
+    def get_accounts_data(self):
+        """Отримання даних акаунтів"""
+        try:
+            # Спробуємо отримати з головного об'єкта
+            if hasattr(self, 'accounts') and self.accounts:
+                print(f"Отримано {len(self.accounts)} акаунтів з головного об'єкта")
+                return self.accounts
+            
+            # Якщо і це не працює, завантажимо напряму
+            if os.path.exists('data/accounts.json'):
+                with open('data/accounts.json', 'r', encoding='utf-8') as f:
+                    accounts = json.load(f)
+                    print(f"Завантажено {len(accounts)} акаунтів з файлу")
+                    return accounts
+            
+            print("Акаунти не знайдено")
+            return []
+        except Exception as e:
+            print(f"Помилка отримання акаунтів: {e}")
+            return []
+    
+    def get_targets_data(self):
+        """Отримання даних цілей"""
+        try:
+            # Спробуємо отримати з головного об'єкта
+            if hasattr(self, 'targets') and self.targets:
+                print(f"Отримано {len(self.targets)} цілей з головного об'єкта")
+                return self.targets
+            
+            # Якщо і це не працює, завантажимо напряму
+            if os.path.exists('data/targets.json'):
+                with open('data/targets.json', 'r', encoding='utf-8') as f:
+                    targets = json.load(f)
+                    print(f"Завантажено {len(targets)} цілей з файлу")
+                    return targets
+            
+            print("Цілі не знайдено")
+            return []
+        except Exception as e:
+            print(f"Помилка отримання цілей: {e}")
+            return []
+    
+    def get_chain_data(self):
+        """Отримання даних ланцюжка"""
+        try:
+            # Спробуємо отримати з сторінки ланцюжка
+            if hasattr(self.pages.get("chain"), 'get_chain'):
+                chain = self.pages["chain"].get_chain()
+                print(f"Отримано ланцюжок з {len(chain)} дій зі сторінки")
+                if chain:
+                    for i, action in enumerate(chain):
+                        print(f"  Дія {i+1}: {action.get('name', action.get('type'))}")
+                return chain
+            
+            # Спробуємо завантажити з файлу
+            if os.path.exists('data/action_chain.json'):
+                with open('data/action_chain.json', 'r', encoding='utf-8') as f:
+                    chain = json.load(f)
+                    enabled_chain = [action for action in chain if action.get('enabled', True)]
+                    print(f"Завантажено ланцюжок з {len(enabled_chain)} дій з файлу")
+                    return enabled_chain
+            
+            print("❌ Ланцюжок дій не знайдено")
+            return []
+        except Exception as e:
+            print(f"❌ Помилка отримання ланцюжка: {e}")
+            return []
+    
     # Методи управління автоматизацією
     def start_automation(self):
-        """Запуск автоматизації з розподіленими воркерами"""
-        try:
-            # Збереження налаштувань браузера
-            self.save_browser_settings()
-            AutomationManager
-            # Перевірка наявності даних
-            accounts = self.accounts
-            targets = self.targets
-            chain = self.pages["chain"].get_chain()
-            
-            if not accounts:
-                messagebox.showwarning("Попередження", "Додайте хоча б один акаунт")
+     """Запуск РЕАЛЬНОЇ автоматизації з браузерами"""
+     try:
+        # Збереження налаштувань браузера
+        self.save_browser_settings()
+        
+        # Перевірка наявності даних
+        accounts = self.get_accounts_data()
+        targets = self.get_targets_data()
+        chain = self.get_chain_data()
+        
+        if not accounts:
+            messagebox.showwarning("Попередження", "Додайте хоча б один акаунт")
+            return
+        
+        if not targets:
+            messagebox.showwarning("Попередження", "Додайте хоча б одну ціль")
+            return
+        
+        if not chain:
+            messagebox.showwarning("Попередження", "Створіть ланцюжок дій")
+            return
+        
+        # Отримання конфігурацій воркерів
+        worker_configs = []
+        for worker_config in self.worker_configs:
+            config = worker_config.get_config()
+            if config:  # Тільки увімкнені воркери
+                worker_configs.append(config)
+        
+        if not worker_configs:
+            messagebox.showwarning("Попередження", "Увімкніть хоча б один воркер")
+            return
+        
+        # Перевірка що у всіх воркерів є акаунти
+        for config in worker_configs:
+            if not config['account']:
+                messagebox.showwarning("Попередження", f"Воркер #{config['worker_id'] + 1} не має акаунту")
                 return
-            
-            if not targets:
-                messagebox.showwarning("Попередження", "Додайте хоча б одну ціль")
-                return
-            
-            if not chain:
-                messagebox.showwarning("Попередження", "Створіть ланцюжок дій")
-                return
-            
-            # Отримання конфігурацій воркерів
-            worker_configs = []
-            for worker_config in self.worker_configs:
-                config = worker_config.get_config()
-                if config:  # Тільки увімкнені воркери
-                    worker_configs.append(config)
-            
-            if not worker_configs:
-                messagebox.showwarning("Попередження", "Увімкніть хоча б один воркер")
-                return
-            
-            # Перевірка що у всіх воркерів є акаунти
-            for config in worker_configs:
-                if not config['account']:
-                    messagebox.showwarning("Попередження", f"Воркер #{config['worker_id'] + 1} не має акаунту")
-                    return
-            
-            # Налаштування автоматизації
-            automation_config = {
-                'worker_configs': worker_configs,
-                'browser_settings': self.browser_settings,
-                'delay_minutes': self.delay_var.get(),
-                'mode': self.mode_var.get(),
-                'texts': self.texts
-            }
-            
-            # Створення менеджера автоматизації
-            if not self.automation_manager:
-                self.automation_manager = AutomationManager()
-            
-            # Запуск в окремому потоці
-            def run_automation():
-                try:
-                    self.automation_manager.start_automation(automation_config, self.update_worker_status)
-                except Exception as e:
-                    messagebox.showerror("Помилка", f"Помилка автоматизації: {e}")
-                    self.stop_automation()
-            
-            automation_thread = threading.Thread(target=run_automation, daemon=True)
-            automation_thread.start()
-            
-            # Оновлення інтерфейсу
-            self.start_btn.configure(state='disabled')
-            self.stop_btn.configure(state='normal')
-            self.pause_btn.configure(state='normal')
-            self.status_label.configure(text="● Автоматизація активна", fg=ModernStyle.COLORS['success'])
-            
-            # Оновлення статусу воркерів
-            for i, config in enumerate(worker_configs):
-                if i < len(self.worker_widgets):
-                    account_name = config['account']['username']
-                    self.worker_widgets[i].update_status('working', f"Підготовка", account_name)
-            
-            messagebox.showinfo("Успіх", f"Автоматизація запущена з {len(worker_configs)} воркерами")
-            
-        except Exception as e:
-            messagebox.showerror("Помилка", f"Помилка запуску автоматизації: {e}")
+        
+        print("🚀 Використовується РЕАЛЬНА автоматизація з браузерами!")
+        
+        # ВИПРАВЛЕНА конфігурація для automation_engine
+        automation_config = {
+            'accounts': accounts,
+            'targets': targets,
+            'action_chain': chain,
+            'texts': self.texts,
+            'workers_count': len(worker_configs),
+            'delay_minutes': self.delay_var.get(),
+            'mode': self.mode_var.get(),
+            'browser_settings': {
+                'type': self.browser_settings.get('browser_type', 'chrome'),
+                'headless': self.browser_settings.get('headless', False),
+                'stealth_mode': self.browser_settings.get('stealth_mode', True),
+                'proxy_enabled': self.browser_settings.get('proxy_enabled', True),
+                'timeout': 30000
+            },
+            'selectors': BotConfig().get_selectors(),
+            'action_delays': BotConfig().get_action_delays(),
+            'safety_limits': BotConfig().get_safety_limits(),
+            # ДОДАЄМО worker_configs для сумісності
+            'worker_configs': worker_configs
+        }
+        
+        # Використання РЕАЛЬНОГО менеджера
+        self.automation_manager = RealAutomationManager()
+        
+        # Запуск автоматизації
+        self.automation_manager.start_automation(automation_config, self.update_worker_status)
+        
+        # Оновлення інтерфейсу
+        self.start_btn.configure(state='disabled')
+        self.stop_btn.configure(state='normal')
+        self.pause_btn.configure(state='normal')
+        
+        status_text = "🤖 РЕАЛЬНА автоматизація активна"
+        self.status_label.configure(text=f"● {status_text}", fg=ModernStyle.COLORS['success'])
+        
+        # Оновлення статусу воркерів
+        for i, config in enumerate(worker_configs):
+            if i < len(self.worker_widgets):
+                account_name = config['account']['username']
+                self.worker_widgets[i].update_status('working', f"Підготовка", account_name)
+        
+        messagebox.showinfo("Запуск", f"🚀 РЕАЛЬНА автоматизація запущена з {len(worker_configs)} воркерами!")
+        
+     except Exception as e:
+        messagebox.showerror("Помилка", f"Помилка запуску автоматизації: {e}")
+        print(f"💥 Помилка start_automation: {e}")
+        print(traceback.format_exc())
     
     def stop_automation(self):
         """Зупинка автоматизації"""
@@ -2570,113 +2604,10 @@ class InstagramBotGUI:
         else:
             if messagebox.askyesno("Підтвердження", "Закрити програму?"):
                 self.root.destroy()
-    
-    # Методи для отримання даних (для сумісності)
-    def get_accounts(self):
-        return self.accounts
-    
-    def get_targets(self):
-        return self.targets
-    
-    def get_texts(self, text_type):
-        return self.texts.get(text_type, [])
-def show_diagnostics(self):
-        """Показ діагностики компонентів"""
-        try:
-            from diagnostics import BotDiagnostics
-            
-            # Створення вікна діагностики
-            diag_window = tk.Toplevel(self.root)
-            diag_window.title("🔍 Діагностика компонентів")
-            diag_window.geometry("800x600")
-            diag_window.configure(bg=ModernStyle.COLORS['background'])
-            
-            # Заголовок
-            header = tk.Label(
-                diag_window,
-                text="🔍 Діагностика Instagram Bot Pro v3.0",
-                font=ModernStyle.FONTS['heading'],
-                bg=ModernStyle.COLORS['background'],
-                fg=ModernStyle.COLORS['text']
-            )
-            header.pack(pady=10)
-            
-            # Текстова область для результатів
-            text_frame = tk.Frame(diag_window, bg=ModernStyle.COLORS['background'])
-            text_frame.pack(fill='both', expand=True, padx=15, pady=10)
-            
-            text_area = scrolledtext.ScrolledText(
-                text_frame,
-                font=('Consolas', 10),
-                bg=ModernStyle.COLORS['surface'],
-                fg=ModernStyle.COLORS['text'],
-                insertbackground=ModernStyle.COLORS['text'],
-                wrap=tk.WORD
-            )
-            text_area.pack(fill='both', expand=True)
-            
-            # Кнопки
-            btn_frame = tk.Frame(diag_window, bg=ModernStyle.COLORS['background'])
-            btn_frame.pack(fill='x', padx=15, pady=10)
-            
-            def run_diag():
-                text_area.delete('1.0', tk.END)
-                text_area.insert(tk.END, "🔍 Запуск діагностики...\n\n")
-                text_area.update()
-                
-                # Перенаправлення виводу
-                import io
-                import contextlib
-                
-                output = io.StringIO()
-                with contextlib.redirect_stdout(output):
-                    diagnostics = BotDiagnostics()
-                    results = diagnostics.run_full_diagnostics()
-                
-                # Показ результатів
-                text_area.delete('1.0', tk.END)
-                text_area.insert(tk.END, output.getvalue())
-                
-                # Показ команд встановлення
-                commands = diagnostics.get_installation_commands()
-                if commands:
-                    text_area.insert(tk.END, "\n" + "="*60 + "\n")
-                    text_area.insert(tk.END, "🛠️ КОМАНДИ ДЛЯ ВСТАНОВЛЕННЯ:\n")
-                    text_area.insert(tk.END, "="*60 + "\n")
-                    for cmd in commands:
-                        text_area.insert(tk.END, f"  {cmd}\n")
-                
-                text_area.see(tk.END)
-            
-            AnimatedButton(
-                btn_frame,
-                text="🔍 Запустити діагностику",
-                command=run_diag,
-                bg=ModernStyle.COLORS['primary']
-            ).pack(side='left')
-            
-            AnimatedButton(
-                btn_frame,
-                text="❌ Закрити",
-                command=diag_window.destroy,
-                bg=ModernStyle.COLORS['error']
-            ).pack(side='right')
-            
-            # Автозапуск діагностики
-            diag_window.after(500, run_diag)
-            
-        except Exception as e:
-            messagebox.showerror("Помилка", f"Помилка діагностики: {e}")
 
-# Допоміжні класи
 
-class DataManager:
-    """Спрощений менеджер даних"""
-    
-    def __init__(self):
-        self.data_dir = "data"
-        os.makedirs(self.data_dir, exist_ok=True)
-
+# Менеджери автоматизації
+# У файлі gui.py замініть клас RealAutomationManager на цей:
 
 class RealAutomationManager:
     """РЕАЛЬНИЙ менеджер автоматизації з браузерами"""
@@ -2684,240 +2615,61 @@ class RealAutomationManager:
     def __init__(self):
         self.running = False
         self.paused = False
-        self.manager = None
-        print("🤖 Ініціалізовано RealAutomationManager")
+        self.workers = []
+        print("🤖 Ініціалізовано RealAutomationManager для справжньої роботи")
     
     def start_automation(self, config, status_callback):
-        """Запуск РЕАЛЬНОЇ автоматизації"""
-        print("🚀 Запуск РЕАЛЬНОЇ автоматизації з браузерами!")
+        """Запуск РЕАЛЬНОЇ автоматизації з браузерами"""
+        print("🚀 Запуск РЕАЛЬНОЇ автоматизації!")
         
         self.running = True
         self.paused = False
         
         try:
-            # Створення MultiWorkerManager
+            # Отримання даних з конфігурації
+            accounts = config['accounts']
+            targets = config['targets'] 
+            action_chain = config['action_chain']
+            texts = config['texts']
+            browser_settings = config['browser_settings']
+            workers_count = config['workers_count']
+            delay_minutes = config['delay_minutes']
+            worker_configs = config.get('worker_configs', [])  # ВИПРАВЛЕННЯ
+            
+            print(f"⚙️ Конфігурація: {len(accounts)} акаунтів, {len(targets)} цілей, {workers_count} воркерів")
+            print(f"🌐 Браузер: {browser_settings['type']}, Headless: {browser_settings['headless']}")
+            print(f"👥 Worker configs: {len(worker_configs)}")
+            
+            # Формування конфігурації для automation_engine
+            multi_config = {
+                'accounts': accounts,
+                'targets': targets,
+                'action_chain': action_chain,
+                'texts': texts,
+                'workers_count': workers_count,
+                'delay_minutes': delay_minutes,
+                'mode': config['mode'],
+                'browser_settings': browser_settings,
+                'selectors': config.get('selectors', {}),
+                'action_delays': config.get('action_delays', {}),
+                'safety_limits': config.get('safety_limits', {}),
+                'worker_configs': worker_configs  # ПЕРЕДАЄМО worker_configs
+            }
+            
+            print("🔧 Створення MultiWorkerManager...")
+            
+            # Створення і запуск MultiWorkerManager
             self.manager = MultiWorkerManager()
             
-            # Перетворення конфігурації GUI в формат для automation_engine
-            worker_configs = config['worker_configs']
-            browser_settings = config.get('browser_settings', {})
-            texts = config.get('texts', {})
+            print("▶️ Запуск автоматизації через MultiWorkerManager...")
+            self.manager.start_automation(multi_config, status_callback)
             
-            # Формування конфігурації для кожного воркера
-            automation_configs = []
-            
-            for worker_config in worker_configs:
-                account = worker_config['account']
-                targets = worker_config['targets']
-                chain = worker_config['chain']
+            print("✅ РЕАЛЬНА автоматизація запущена через MultiWorkerManager!")
                 
-                # Конфігурація для automation_engine
-                automation_config = {
-                    'accounts': [account],  # Один акаунт на воркер
-                    'targets': targets,
-                    'action_chain': chain,
-                    'texts': texts,
-                    'workers_count': 1,  # Кожен воркер - окремий процес
-                    'delay_minutes': config.get('delay_minutes', 5),
-                    'mode': config.get('mode', 'continuous'),
-                    'browser_settings': {
-                        'type': browser_settings.get('browser_type', 'chrome'),
-                        'headless': browser_settings.get('headless', False),
-                        'stealth_mode': browser_settings.get('stealth_mode', True),
-                        'proxy_enabled': browser_settings.get('proxy_enabled', True),
-                        'timeout': 30000
-                    },
-                    'selectors': BotConfig().get_selectors() if REAL_AUTOMATION else {},
-                    'action_delays': BotConfig().get_action_delays() if REAL_AUTOMATION else {},
-                    'safety_limits': BotConfig().get_safety_limits() if REAL_AUTOMATION else {}
-                }
-                
-                automation_configs.append(automation_config)
-                
-                print(f"🔧 Конфігурація воркера {worker_config['worker_id']+1}:")
-                print(f"   👤 Акаунт: {account['username']}")
-                print(f"   🎯 Цілі: {len(targets)}")
-                print(f"   🔗 Дії: {len(chain)}")
-                print(f"   🌐 Браузер: {browser_settings.get('browser_type', 'chrome')}")
-            
-            # Запуск автоматизації для кожного воркера
-            def worker_callback(worker_id, status, account_name=None, target=None, stats=None):
-                """Проксі для callback GUI"""
-                if account_name and target:
-                    status_callback(worker_id, status, target, account_name, stats)
-                elif account_name:
-                    status_callback(worker_id, status, "Обробка", account_name, stats)
-                else:
-                    status_callback(worker_id, status)
-            
-            # Запуск кожного воркера в окремому потоці
-            import asyncio
-            
-            async def run_real_automation():
-                tasks = []
-                
-                for i, auto_config in enumerate(automation_configs):
-                    print(f"🚀 Запуск воркера {i+1}...")
-                    
-                    # Створення автоматизації для воркера
-                    automation = InstagramAutomation(auto_config)
-                    
-                    # Запуск автоматизації
-                    task = asyncio.create_task(
-                        automation.run_account_automation(
-                            auto_config['accounts'][0],
-                            auto_config['targets'],
-                            auto_config['action_chain'],
-                            auto_config['texts'],
-                            i,
-                            worker_callback
-                        )
-                    )
-                    tasks.append(task)
-                
-                # Очікування завершення всіх воркерів
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                
-                print("🏁 Всі воркери завершили роботу")
-                self.running = False
-                
-                return results
-            
-            # Запуск в окремому потоці
-            def sync_runner():
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    results = loop.run_until_complete(run_real_automation())
-                    loop.close()
-                    print("✅ Автоматизація завершена успішно")
-                except Exception as e:
-                    print(f"💥 Помилка в реальній автоматизації: {e}")
-                    self.running = False
-                    raise e
-            
-            # Запуск в окремому потоці
-            automation_thread = threading.Thread(target=sync_runner, daemon=True)
-            automation_thread.start()
-            
-            print(f"🎬 Запущено {len(automation_configs)} реальних воркерів!")
-            
         except Exception as e:
             print(f"💥 Помилка запуску реальної автоматизації: {e}")
-            self.running = False
-            raise e
-    
-    def stop_automation(self):
-        """Зупинка автоматизації"""
-        print("🛑 Зупинка реальної автоматизації")
-        self.running = False
-        self.paused = False
-        
-        if self.manager:
-            self.manager.stop_automation()
-    
-    def pause_automation(self):
-        """Пауза автоматизації"""
-        print("⏸️ Пауза реальної автоматизації")
-        self.paused = True
-        
-        if self.manager:
-            self.manager.pause_automation()
-    
-    def is_running(self):
-        """Перевірка чи працює автоматизація"""
-        return self.running
-
-
-class AutomationManager:
-    """Менеджер автоматизації з розподілом воркерів"""
-    
-    def __init__(self):
-        self.running = False
-        self.paused = False
-        self.workers = []
-        print("🏭 Ініціалізовано AutomationManager")
-    
-    def start_automation(self, config, status_callback):
-        """Запуск автоматизації з розподіленими воркерами"""
-        print("🚀 AutomationManager.start_automation() викликано")
-        
-        self.running = True
-        self.paused = False
-        
-        worker_configs = config['worker_configs']
-        delay_minutes = config['delay_minutes']
-        
-        print(f"⚙️ Конфігурація: {len(worker_configs)} воркерів, затримка {delay_minutes} хв")
-        
-        import time
-        
-        try:
-            # Симуляція роботи кожного воркера
-            for worker_config in worker_configs:
-                if not self.running:
-                    print("🛑 Автоматизація зупинена")
-                    break
-                
-                worker_id = worker_config['worker_id']
-                account = worker_config['account']
-                targets = worker_config['targets']
-                chain = worker_config['chain']
-                
-                print(f"👤 Воркер {worker_id+1}: {account['username']} -> {len(targets)} цілей")
-                
-                status_callback(worker_id, 'working', "Підготовка", account['username'])
-                time.sleep(1)  # Симуляція підготовки
-                
-                # Симуляція роботи з цілями
-                for i, target in enumerate(targets):
-                    if not self.running:
-                        print(f"🛑 Воркер {worker_id+1} зупинено")
-                        break
-                    
-                    while self.paused:
-                        print(f"⏸️ Воркер {worker_id+1} на паузі")
-                        time.sleep(1)
-                    
-                    print(f"🎯 Воркер {worker_id+1}: обробка цілі {target}")
-                    status_callback(worker_id, 'working', target, account['username'])
-                    
-                    # Симуляція виконання дій
-                    for j, action in enumerate(chain):
-                        if not self.running:
-                            break
-                        
-                        print(f"🔄 Воркер {worker_id+1}: дія {action.get('name', action.get('type'))}")
-                        time.sleep(0.5)  # Симуляція затримки дії
-                        
-                        # Оновлення статистики
-                        stats = {
-                            'processed_targets': i + 1,
-                            'total_actions': (i * len(chain)) + j + 1,
-                            'successful_actions': (i * len(chain)) + j + 1,
-                            'errors': 0
-                        }
-                        status_callback(worker_id, 'working', target, account['username'], stats)
-                    
-                    # Затримка між цілями
-                    if i < len(targets) - 1:
-                        print(f"⏱️ Воркер {worker_id+1}: затримка між цілями")
-                        time.sleep(2)
-                
-                # Затримка між акаунтами
-                if worker_config != worker_configs[-1]:
-                    delay_seconds = min(delay_minutes * 10, 30)  # Максимум 30 сек для демо
-                    print(f"⏱️ Воркер {worker_id+1}: затримка {delay_seconds} сек")
-                    time.sleep(delay_seconds)
-                
-                print(f"✅ Воркер {worker_id+1} завершено")
-                status_callback(worker_id, 'idle')
-            
-            print("🏁 Всі воркери завершили роботу")
-            self.running = False
-            
-        except Exception as e:
-            print(f"💥 Помилка в AutomationManager: {e}")
+            print(f"📊 Config keys: {list(config.keys())}")
+            print(traceback.format_exc())
             self.running = False
             raise e
     
@@ -2926,23 +2678,63 @@ class AutomationManager:
         print("🛑 Зупинка автоматизації")
         self.running = False
         self.paused = False
+        
+        if hasattr(self, 'manager') and self.manager:
+            self.manager.stop_automation()
     
     def pause_automation(self):
         """Пауза автоматизації"""
         print("⏸️ Пауза автоматизації")
         self.paused = True
+        
+        if hasattr(self, 'manager') and self.manager:
+            self.manager.pause_automation()
     
     def is_running(self):
         """Перевірка чи працює автоматизація"""
         return self.running
 
+# Fallback DataManager якщо основний недоступний
+class FallbackDataManager:
+    """Спрощений менеджер даних як fallback"""
+    
+    def __init__(self):
+        self.data_dir = "data"
+        os.makedirs(self.data_dir, exist_ok=True)
+        print("📁 Ініціалізовано FallbackDataManager")
+
 
 def main():
-    """Головна функція"""
-    root = tk.Tk()
-    app = InstagramBotGUI(root)
-    root.mainloop()
+    """Головна функція запуску GUI"""
+    try:
+        print("🖥️ Запуск Instagram Bot Pro v3.0 GUI...")
+        
+        # Створення головного вікна
+        root = tk.Tk()
+        
+        # Запуск GUI
+        app = InstagramBotGUI(root)
+        
+        print("✅ GUI запущено успішно!")
+        print(f"🤖 Режим роботи: {'РЕАЛЬНА АВТОМАТИЗАЦІЯ' if REAL_AUTOMATION else 'СИМУЛЯЦІЯ'}")
+        
+        if not REAL_AUTOMATION:
+            print("💡 Для реальної роботи встановіть:")
+            print("   pip install playwright")
+            print("   playwright install chromium")
+        
+        root.mainloop()
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Критична помилка GUI: {e}")
+        print(traceback.format_exc())
+        return False
 
+
+# Експорт головного класу
+__all__ = ['InstagramBotGUI', 'main']
 
 if __name__ == "__main__":
-    main()
+    main()        
