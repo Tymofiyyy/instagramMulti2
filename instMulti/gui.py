@@ -2394,7 +2394,7 @@ class InstagramBotGUI:
         try:
             # Збереження налаштувань браузера
             self.save_browser_settings()
-            
+            AutomationManager
             # Перевірка наявності даних
             accounts = self.accounts
             targets = self.targets
@@ -2580,7 +2580,93 @@ class InstagramBotGUI:
     
     def get_texts(self, text_type):
         return self.texts.get(text_type, [])
-
+def show_diagnostics(self):
+        """Показ діагностики компонентів"""
+        try:
+            from diagnostics import BotDiagnostics
+            
+            # Створення вікна діагностики
+            diag_window = tk.Toplevel(self.root)
+            diag_window.title("🔍 Діагностика компонентів")
+            diag_window.geometry("800x600")
+            diag_window.configure(bg=ModernStyle.COLORS['background'])
+            
+            # Заголовок
+            header = tk.Label(
+                diag_window,
+                text="🔍 Діагностика Instagram Bot Pro v3.0",
+                font=ModernStyle.FONTS['heading'],
+                bg=ModernStyle.COLORS['background'],
+                fg=ModernStyle.COLORS['text']
+            )
+            header.pack(pady=10)
+            
+            # Текстова область для результатів
+            text_frame = tk.Frame(diag_window, bg=ModernStyle.COLORS['background'])
+            text_frame.pack(fill='both', expand=True, padx=15, pady=10)
+            
+            text_area = scrolledtext.ScrolledText(
+                text_frame,
+                font=('Consolas', 10),
+                bg=ModernStyle.COLORS['surface'],
+                fg=ModernStyle.COLORS['text'],
+                insertbackground=ModernStyle.COLORS['text'],
+                wrap=tk.WORD
+            )
+            text_area.pack(fill='both', expand=True)
+            
+            # Кнопки
+            btn_frame = tk.Frame(diag_window, bg=ModernStyle.COLORS['background'])
+            btn_frame.pack(fill='x', padx=15, pady=10)
+            
+            def run_diag():
+                text_area.delete('1.0', tk.END)
+                text_area.insert(tk.END, "🔍 Запуск діагностики...\n\n")
+                text_area.update()
+                
+                # Перенаправлення виводу
+                import io
+                import contextlib
+                
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    diagnostics = BotDiagnostics()
+                    results = diagnostics.run_full_diagnostics()
+                
+                # Показ результатів
+                text_area.delete('1.0', tk.END)
+                text_area.insert(tk.END, output.getvalue())
+                
+                # Показ команд встановлення
+                commands = diagnostics.get_installation_commands()
+                if commands:
+                    text_area.insert(tk.END, "\n" + "="*60 + "\n")
+                    text_area.insert(tk.END, "🛠️ КОМАНДИ ДЛЯ ВСТАНОВЛЕННЯ:\n")
+                    text_area.insert(tk.END, "="*60 + "\n")
+                    for cmd in commands:
+                        text_area.insert(tk.END, f"  {cmd}\n")
+                
+                text_area.see(tk.END)
+            
+            AnimatedButton(
+                btn_frame,
+                text="🔍 Запустити діагностику",
+                command=run_diag,
+                bg=ModernStyle.COLORS['primary']
+            ).pack(side='left')
+            
+            AnimatedButton(
+                btn_frame,
+                text="❌ Закрити",
+                command=diag_window.destroy,
+                bg=ModernStyle.COLORS['error']
+            ).pack(side='right')
+            
+            # Автозапуск діагностики
+            diag_window.after(500, run_diag)
+            
+        except Exception as e:
+            messagebox.showerror("Помилка", f"Помилка діагностики: {e}")
 
 # Допоміжні класи
 
